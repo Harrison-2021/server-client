@@ -2,7 +2,7 @@
 
 /* 1.创建共享内存
 传入要创建共享内存的大小，并将共享内存id以参数传回 */
-enum shm_creat_status shm_create(size_t size,int *pshmid) {
+enum shm_creat_status shm_create(size_t size,int *p_shmid) {
     key_t key;
     int shmid;
 
@@ -21,10 +21,10 @@ enum shm_creat_status shm_create(size_t size,int *pshmid) {
             perror("[ERROR]: shmget() ");
             return SHM_CREAT_ERROR;
         }
-        *pshmid = shmid;
+        *p_shmid = shmid;
         return SHM_CREAT_NEW;
     } else {
-        *pshmid = shmid;
+        *p_shmid = shmid;
         return SHM_HAS_EXIST;
     }
    

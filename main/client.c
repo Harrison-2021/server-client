@@ -1,32 +1,53 @@
-#include <stdio.h>
-#include <string.h>
+#include "shm-fifo.h"
 
-#include "shm.h"
+typedef struct person{
+    int age;
+    char name[32];
+
+}person_t;
+
+// 创建两个子进程向服务器发送数据
 
 int main(void)
 {
-    int shmid;
-    enum shm_creat_status shm_status;
-    void *addr = NULL;
-    char buffer[16] = {0};
+    int i;
+    pid_t cpid;
+    // 创建环形队列
+    shm_fifo_t *fifo = shm_fifo_init(3,sizeof(person_t));
+    person_t  person;
 
-    shm_status = shm_create(SHM_SZ,&shmid) ;
+    cpid = fork();
+    if (cpid == -1){
+        perror("[ERROR]: fork()");
+        exit(EXIT_FAILURE);
+    }else if (cpid == 0){ // 子进程A
+        for (i = 0;i < 10;i++){
+            strcpy(person.name,"lisi");
+            person.age = 20;
+            shm_fifo_put(fifo,&person); // 数据写入环形队列
+            // sleep(1);
+        }
 
-    if (shm_status == SHM_CREAT_NEW)
-        printf(" shared memory creat new.\n");
-    else if (shm_status == SHM_HAS_EXIST)
-        printf(" shared memory has exist.\n");
-    
-    addr = shm_at(shmid);
-    if (addr == NULL){
-        printf("shm at failed.\n");
-        return -1;
+        exit(EXIT_SUCCESS);
+    }else if (cpid > 0){
+        cpid = fork();
+        if (cpid == -1){
+            perror("[ERROR]: fork()");
+            exit(EXIT_FAILURE);
+            
+        }else if (cpid == 0){ // 子进程B
+            for (i = 0;i < 10;i++){
+                strcpy(person.name,"zhangsan");
+                person.age = 30;
+                shm_fifo_put(fifo,&person);
+                // sleep(2);
+            }
+            exit(EXIT_SUCCESS);
+        }else if(cpid > 0){  // 释放子进程资源
+            wait(NULL);
+            wait(NULL); // 阻塞等待子进程结束
+        }
     }
-    
-    memset(addr,'A',10);
 
-   
-
-    shm_dt(addr);
     return 0;
 }

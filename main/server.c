@@ -1,33 +1,22 @@
-#include <stdio.h>
-#include <string.h>
+#include "shm-fifo.h"
 
-#include "shm.h"
+typedef struct person{
+    int age;
+    char name[32];
 
+}person_t;
+
+// 服务器负责从环形队列中读取数据
 int main(void)
 {
-    int shmid;
-    enum shm_creat_status shm_status;
-    void *addr = NULL;
-    char buffer[16] = {0};
+    person_t person;
 
-    shm_status = shm_create(SHM_SZ,&shmid) ;
+    shm_fifo_t *fifo = shm_fifo_init(3,sizeof(person_t));
 
-    if (shm_status == SHM_CREAT_NEW)
-        printf(" shared memory creat new.\n");
-    else if (shm_status == SHM_HAS_EXIST)
-        printf(" shared memory has exist.\n");
-    
-    addr = shm_at(shmid);
-    if (addr == NULL){
-        printf("shm at failed.\n");
-        return -1;
+    for(;;){
+        shm_fifo_get(fifo,&person);
+        printf("name = %s,age = %d\n",person.name,person.age);
+        sleep(1);
     }
-    
-    memcpy(buffer,addr,10);
-
-    printf("buffer : %s\n",buffer);
-
-    shm_dt(addr);
-    shm_del(shmid);
     return 0;
 }
