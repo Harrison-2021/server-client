@@ -13,4 +13,7 @@
 #include <unistd.h>
 #include <sys/wait.h>
 
+#include <stdbool.h>
+#include <pthread.h>
+
 #endif
