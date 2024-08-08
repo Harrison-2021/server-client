@@ -1,60 +1,57 @@
-#include "shm-fifo.h"
+#include "server-client.h"
 
-#if 0
-typedef struct person{
-    int age;
-    char name[32];
+ /* 定义全部变量，记录环形队列数据结构的地址 */
+static p_shm_fifo g_shmfifo = NULL;
+/* 线程池 */
+static p_tpool g_pool = NULL;
 
-}person_t;
-
-// 服务器负责从环形队列中读取数据
-int main(void)
-{
-    person_t person;
-
-    shm_fifo_t *fifo = shm_fifo_init(3,sizeof(person_t));
-
-    for(;;){
-        shm_fifo_get(fifo,&person);
-        printf("name = %s,age = %d\n",person.name,person.age);
-        sleep(1);
-    }  
-    return 0;
-}
-#endif
-
-#include "thread-pool.h"
-
-// 任务回调函数
-void taskfunc(void *arg)
-{
-    int num = *(int *)arg;
-
-    printf("task thread %ld is working,number = %d\n",pthread_self(),num);
-
-    sleep(2);
+/* 1. 服务器初始化*/
+void server_init() {
+    g_shmfifo = shm_fifo_init(BLOCK_SZ,sizeof(packet_t));
+    g_pool = thread_pool_init(THREAD_CNT,TASK_CNT);
 }
 
-int main(void)
-{
-    tpool_t *pool = thread_pool_init(20,100);// 创建线程池 包含20个线程,执行100个任务
-    int *p = NULL;
-    for (int i = 0;i < 100;i++){
-       
-        p = (int *)malloc(sizeof(int)); // 每个队列访问独立变量，无需互斥操作
-        *p = i + 100;
-        thread_pool_add_task(pool,taskfunc,p);// 将任务添加到任务队列中
+/* 2. 服务器数据接收接口设计 */
+void runloop() {
+    p_packet packet = NULL;
+
+    while(1) {
+        //为线程池中每个线程分配独立数据包内存-线程释放后释放此资源
+        packet = (p_packet)malloc(sizeof(packet_t));
+        if(!packet) {
+            perror("[ERROR]: malloc packet ");
+            return;
+        }
+        memset(packet, 0, sizeof(packet_t));
+
+        //从环形队列中获取数据-生产者消费者模型-信号量与互斥锁
+        shm_fifo_get(g_shmfifo,packet);
+        #ifdef DEBUG
+		printf("topic : %s,pid : %d,mode : %d,content : %s\n",
+					packet->topic,
+					packet->pid,
+					packet->mode,
+					packet->content);
+        #endif
+        //将获取的数据添加到线程池中，线程池会调用线程执行传入的任务函数与数据包参数
+        thread_pool_add_task(g_pool,task_handler,(void*)packet);
     }
+}
 
-    #if 1
-    while(1){
-	// 防止父进程结束，子线程自动结束
+/* 3. 数据分发-任务函数 
+    @param arg：packet数据包指针*/
+void task_handler(void* arg) {
+    p_packet packet = (p_packet)arg;
+    if(packet->mode == PUBLISH) { // 处理发布消息任务
+        printf("[DEBUG]: publish.\n");
+    } else if(packet->mode == SUBSCRIBE) { // 处理订阅消息任务
+        printf("[DEBUG]: subscribe.\n");
     }
-    #endif
+}
 
-    sleep(30);
-
-    thread_pool_destroy(pool);
-
+int main() {
+    // server_init();
+    // runloop();
+    hashmap_test();
     return 0;
 }

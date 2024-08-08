@@ -18,19 +18,24 @@ SOURSE_DIR 	= $(dir $(SRC))
 vpath %.c $(SOURSE_DIR)
 
 TARGET1 		:= $(BIN_DIR)/server
-TARGET2 		:= $(BIN_DIR)/client
+TARGET2 		:= $(BIN_DIR)/client-sub
+TARGET3 		:= $(BIN_DIR)/client-pub
 	
 OBJ1			:= $(OBJ) $(MAIN_DIR)/server.o
-OBJ2 			:= $(OBJ) $(MAIN_DIR)/client.o
+OBJ2 			:= $(OBJ) $(MAIN_DIR)/client-sub.o
+OBJ3 			:= $(OBJ) $(MAIN_DIR)/client-pub.o
 
 # 先创建bin目录，再编译，需要依赖多个条件
-all : $(TARGET1) $(TARGET2)
+all : $(TARGET1) $(TARGET2) $(TARGET3)
 
 $(TARGET1) : $(OBJ1)
 	$(CC) $(OBJ1) -o $(TARGET1) $(LDFLAGS)
 
 $(TARGET2) : $(OBJ2)
 	$(CC) $(OBJ2) -o $(TARGET2) $(LDFLAGS)
+
+$(TARGET3) : $(OBJ3)
+	$(CC) $(OBJ3) -o $(TARGET3) $(LDFLAGS)
 
 $(OBJ_DIR)/%.o : %.c
 	$(CC) $(CFLAGS) $< -o $@ $(INCLUDE_DIR) 

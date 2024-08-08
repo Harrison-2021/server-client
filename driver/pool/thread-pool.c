@@ -147,7 +147,9 @@ void *tp_worker(void *arg) {
         pthread_mutex_unlock(&pool->tp_mutex_pool);
 
         // 7.执行任务
+        printf("[DEBUG] Thread %ld start working...\n",pthread_self());
         task.function(task.arg);// 执行任务
+        free(task.arg); // task.arg = *packet,任务执行完，数据包内存可以释放
 		printf("[DEBUG] Thread %ld end working...\n",pthread_self());
 
     }
