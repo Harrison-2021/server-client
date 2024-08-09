@@ -3,6 +3,9 @@
 
 #include "common.h"
 
+#define SEM_PATHNAME "."
+#define SEM_PRO_ID 99
+
 extern int sem_create(int nsems,unsigned short values[]); //创建信号量集合
 extern int sem_p(int semid,int semnum);// 占用资源
 extern int sem_v(int semid,int semnum);// 释放资源

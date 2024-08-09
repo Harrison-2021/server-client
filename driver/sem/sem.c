@@ -1,9 +1,4 @@
 #include "sem.h"
-#include <sys/sem.h>
-
-
-#define SEM_PATHNAME "."
-#define SEM_PRO_ID 99
 
 union semun{
 	int val; // SETVAL
@@ -30,12 +25,14 @@ int sem_create(int nsems,unsigned short values[])
 		perror("[ERROR] ftok() : ");
 		return -1;
 	}
-
-	semid = semget(key,nsems,IPC_CREAT|0666);
-	if (semid == -1){
-		perror("[ERROR] semget() : ");
-		return -1;
-	}
+    semid = semget(key, nsems, 0); // 如果创建过了，直接获取id,
+    if(semid == -1) {
+        semid = semget(key,nsems,IPC_CREAT|0666);
+        if (semid == -1){
+            perror("[ERROR] semget() : ");
+            return -1;
+        }
+    }
 	
 	s.array = values;
 
